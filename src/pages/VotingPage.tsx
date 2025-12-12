@@ -1,8 +1,12 @@
+
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase, Candidate } from '../lib/supabase';
 import { Camera, CheckCircle, Loader2 } from 'lucide-react';
 
+
 export default function VotingPage() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<'employee-id' | 'select-candidate' | 'selfie' | 'success'>('employee-id');
   const [employeeId, setEmployeeId] = useState('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -354,15 +358,25 @@ export default function VotingPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
                 Voting Berhasil!
               </h2>
+
               <p className="text-gray-600 mb-8">
                 Terima kasih telah berpartisipasi dalam pemilihan bakal calon ketua serikat pekerja.
               </p>
-              <a
-                href="/results"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors"
-              >
-                Lihat Hasil Voting
-              </a>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => navigate('/')}
+                  className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+                >
+                  Beranda
+                </button>
+                <button
+                  onClick={() => navigate('/results')}
+                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+                >
+                  Lihat Hasil Voting
+                </button>
+              </div>
             </div>
           )}
         </div>

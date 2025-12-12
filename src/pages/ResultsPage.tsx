@@ -1,8 +1,12 @@
+
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase, VoteResult } from '../lib/supabase';
 import { TrendingUp, Users, Home } from 'lucide-react';
 
+
 export default function ResultsPage() {
+  const navigate = useNavigate();
   const [results, setResults] = useState<VoteResult[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -44,17 +48,18 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-8">
+
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
               Hasil Voting Real-Time
             </h1>
-            {/* <a
-              href="/pemilu-app"
+            <button
+              onClick={() => navigate('/')}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
             >
               <Home className="w-5 h-5" />
               Beranda
-            </a> */}
+            </button>
           </div>
 
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8">
