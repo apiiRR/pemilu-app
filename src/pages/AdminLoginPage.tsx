@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
 
           <div className="mt-6 text-center">
             <button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate('/pemilu-app')} 
               className="text-sm text-blue-600 hover:text-blue-700"
             >
               Kembali ke Beranda

@@ -15,7 +15,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/pemilu-app" element={<HomePage />} />
           <Route path="/vote" element={<VotingPage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />

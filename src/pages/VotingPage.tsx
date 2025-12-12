@@ -365,7 +365,7 @@ export default function VotingPage() {
 
               <div className="flex gap-4 justify-center">
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/pemilu-app')}
                   className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
                 >
                   Beranda
