@@ -48,13 +48,13 @@ export default function ResultsPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               Hasil Voting Real-Time
             </h1>
-            <a
+            {/* <a
               href="/pemilu-app"
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
             >
               <Home className="w-5 h-5" />
               Beranda
-            </a>
+            </a> */}
           </div>
 
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8">
