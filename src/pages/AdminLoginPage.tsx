@@ -1,8 +1,12 @@
+
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Loader2 } from 'lucide-react';
 
+
 export default function AdminLoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,11 +25,9 @@ export default function AdminLoginPage() {
       setError('Email atau password salah');
       setLoading(false);
     } else {
-      // Redirect akan ditangani oleh AuthContext dan AdminDashboard
-      // Tunggu sebentar untuk memastikan user state ter-update
-      setTimeout(() => {
-        window.location.href = '/admin';
-      }, 500);
+
+      // Redirect menggunakan React Router navigation
+      navigate('/admin');
     }
   };
 
@@ -97,10 +99,14 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
+
           <div className="mt-6 text-center">
-            <a href="/" className="text-sm text-blue-600 hover:text-blue-700">
+            <button 
+              onClick={() => navigate('/')} 
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
               Kembali ke Beranda
-            </a>
+            </button>
           </div>
         </div>
       </div>

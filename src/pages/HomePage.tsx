@@ -1,4 +1,6 @@
+
 import { Vote, BarChart3, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function HomePage() {
   return (
@@ -15,9 +17,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <a
-              href="/vote"
-              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1"
+            <Link
+              to="/vote"
+              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1 block"
             >
               <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Vote className="w-8 h-8 text-blue-600" />
@@ -29,11 +31,11 @@ export default function HomePage() {
               <div className="bg-blue-600 text-white font-medium py-3 rounded-lg">
                 Mulai Voting
               </div>
-            </a>
+            </Link>
 
-            <a
-              href="/results"
-              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1"
+            <Link
+              to="/results"
+              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1 block"
             >
               <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-8 h-8 text-green-600" />
@@ -45,11 +47,11 @@ export default function HomePage() {
               <div className="bg-green-600 text-white font-medium py-3 rounded-lg">
                 Lihat Hasil
               </div>
-            </a>
+            </Link>
 
-            <a
-              href="/admin/login"
-              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1"
+            <Link
+              to="/admin/login"
+              className="bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1 block"
             >
               <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-8 h-8 text-slate-600" />
@@ -61,7 +63,7 @@ export default function HomePage() {
               <div className="bg-slate-600 text-white font-medium py-3 rounded-lg">
                 Login Admin
               </div>
-            </a>
+            </Link>
           </div>
 
           <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 text-white">

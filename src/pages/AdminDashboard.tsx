@@ -1,13 +1,21 @@
 
 
 
+
+
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase, Candidate, Employee, Vote } from '../lib/supabase';
-import { LogOut, Plus, Trash2, Upload, Users, Image, Eye } from 'lucide-react';
+import { LogOut, Plus, Trash2, Upload, Users, Image, Eye, Bug } from 'lucide-react';
+
+import { testSupabaseConnection, testAddCandidate, debugAuth } from '../utils/debugSupabase';
+import { runCandidateAdditionTest } from '../utils/testCandidateAddition';
 
 export default function AdminDashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'candidates' | 'employees' | 'votes'>('candidates');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -20,8 +28,12 @@ export default function AdminDashboard() {
   const [candidateOrder, setCandidateOrder] = useState('');
 
 
+
   const [employeeIds, setEmployeeIds] = useState('');
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+
+
 
   useEffect(() => {
     // Tunggu loading selesai sebelum cek user
@@ -32,76 +44,171 @@ export default function AdminDashboard() {
     
     if (!user) {
       // User sudah di-load dan tidak ada (belum login)
-      window.location.href = '/admin/login';
+      navigate('/admin/login');
       return;
     }
     
     // User sudah login, load data
     loadData();
-  }, [user, activeTab, authLoading]);
+  }, [user, authLoading, activeTab]); // Include activeTab to reload data when tab changes
+
 
   const loadData = async () => {
+    console.log('Loading data for tab:', activeTab);
+    
     if (activeTab === 'candidates') {
-      const { data } = await supabase
+      console.log('Loading candidates...');
+      const { data, error } = await supabase
         .from('candidates')
         .select('*')
         .order('order_number');
-      if (data) setCandidates(data);
+      
+      if (error) {
+        console.error('Error loading candidates:', error);
+      } else {
+        console.log('Candidates loaded:', data);
+        setCandidates(data || []);
+      }
     } else if (activeTab === 'employees') {
-      const { data } = await supabase
+      console.log('Loading employees...');
+      const { data, error } = await supabase
         .from('employees')
         .select('*')
         .order('created_at', { ascending: false });
-      if (data) setEmployees(data);
+      
+      if (error) {
+        console.error('Error loading employees:', error);
+      } else {
+        console.log('Employees loaded:', data);
+        setEmployees(data || []);
+      }
     } else if (activeTab === 'votes') {
-      const { data } = await supabase
+      console.log('Loading votes...');
+      const { data, error } = await supabase
         .from('votes')
         .select(`
           *,
           candidates (name)
         `)
         .order('voted_at', { ascending: false });
-      if (data) {
-        setVotes(data.map(v => ({
-          ...v,
-          candidate_name: (v.candidates as any)?.name || 'Unknown'
-        })));
+      
+      if (error) {
+        console.error('Error loading votes:', error);
+      } else {
+        console.log('Votes loaded:', data);
+        if (data) {
+          setVotes(data.map(v => ({
+            ...v,
+            candidate_name: (v.candidates as any)?.name || 'Unknown'
+          })));
+        }
       }
     }
-
   };
+
+
 
   const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate inputs
+    if (!candidateName.trim()) {
+      alert('Nama calon harus diisi');
+      setLoading(false);
+      return;
+    }
+
+    if (!candidateOrder.trim()) {
+      alert('Nomor urut harus diisi');
+      setLoading(false);
+      return;
+    }
+
+    const orderNumber = parseInt(candidateOrder);
+    if (isNaN(orderNumber)) {
+      alert('Nomor urut harus berupa angka');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('=== ADDING CANDIDATE ===');
+      console.log('Current user:', user);
+      console.log('User authenticated:', !!user);
+      
+      // Test connection first
+      console.log('Testing database connection...');
+      const { data: testData, error: testError } = await supabase
+        .from('candidates')
+        .select('count')
+        .limit(1);
+      
+      if (testError) {
+        console.error('Database connection test failed:', testError);
+        alert(`Koneksi database gagal: ${testError.message}`);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Database connection OK, test data:', testData);
+
+      const candidateData = {
+        name: candidateName.trim(),
+        description: candidateDescription.trim() || null,
+        order_number: orderNumber
+      };
+
+      console.log('Inserting candidate data:', candidateData);
+
       const { data, error } = await supabase
         .from('candidates')
-        .insert({
-          name: candidateName,
-          description: candidateDescription || null,
-          order_number: parseInt(candidateOrder)
-        })
+        .insert(candidateData)
         .select();
 
+      console.log('Supabase response - data:', data);
+      console.log('Supabase response - error:', error);
+
       if (error) {
-        console.error('Error adding candidate:', error);
-        alert(`Gagal menambahkan calon: ${error.message}`);
+        console.error('Supabase insert error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        alert(`Gagal menambahkan calon: ${error.message}\nKode: ${error.code}`);
         return;
       }
 
-      console.log('Candidate added successfully:', data);
+      console.log('Candidate added successfully!', data);
+      
+      // Clear form
       setCandidateName('');
       setCandidateDescription('');
       setCandidateOrder('');
       setShowAddCandidate(false);
-      loadData();
+      
+      // Force reload candidates specifically
+      console.log('Reloading candidates...');
+      const { data: freshCandidates } = await supabase
+        .from('candidates')
+        .select('*')
+        .order('order_number');
+      
+      if (freshCandidates) {
+        console.log('Fresh candidates loaded:', freshCandidates);
+        setCandidates(freshCandidates);
+      }
+      
       alert('Calon berhasil ditambahkan!');
       
     } catch (err) {
-      console.error('Unexpected error:', err);
-      alert('Terjadi kesalahan yang tidak terduga');
+      console.error('Unexpected error details:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      alert(`Terjadi kesalahan yang tidak terduga: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -157,8 +264,16 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{user.email}</span>
+              <button
+                onClick={() => setShowDebug(!showDebug)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-700 font-medium"
+              >
+                <Bug className="w-4 h-4" />
+                Debug
+              </button>
               <button
                 onClick={() => signOut()}
                 className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium"
@@ -392,9 +507,82 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
+
+      {showDebug && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Debug Tools</h3>
+
+              <button
+                onClick={() => setShowDebug(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={async () => {
+                    const result = await testSupabaseConnection();
+                    alert(`Connection Test: ${result.success ? 'Success' : 'Failed - ' + result.error}`);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Test Connection
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    const result = await testAddCandidate();
+                    alert(`Add Test: ${result.success ? 'Success' : 'Failed - ' + result.error}`);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Test Add Candidate
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    const result = await debugAuth();
+                    alert(`Auth Test: ${result.success ? 'Success - ' + (result.user?.email || 'No email') : 'Failed - ' + result.error}`);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Test Auth
+                </button>
+                
+
+                <button
+                  onClick={async () => {
+                    const result = await runCandidateAdditionTest();
+                    const summary = `Environment: ${result.env.url && result.env.key ? '✓' : '✗'}
+Connection: ${result.connection ? '✓' : '✗'}
+Insert: ${result.insert ? '✓' : '✗'}
+Overall: ${result.connection && result.insert ? 'SUCCESS' : 'FAILED'}`;
+                    alert(`Full Diagnostic:\n${summary}${result.errors.length > 0 ? '\n\nErrors:\n' + result.errors.join('\n') : ''}`);
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Full Diagnostic
+                </button>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                <p><strong>Console Logs:</strong> Check browser console for detailed debug information.</p>
+                <p><strong>Environment:</strong> Make sure Supabase environment variables are set.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedSelfie && (
         <div
