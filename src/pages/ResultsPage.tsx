@@ -5,10 +5,12 @@ import { supabase, VoteResult } from '../lib/supabase';
 import { TrendingUp, Users, Home } from 'lucide-react';
 
 
+
 export default function ResultsPage() {
   const navigate = useNavigate();
   const [results, setResults] = useState<VoteResult[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,8 +32,11 @@ export default function ResultsPage() {
     };
   }, []);
 
+
   const loadResults = async () => {
     setLoading(true);
+    
+    // Load vote results
     const { data } = await supabase
       .from('vote_results')
       .select('*');
@@ -41,6 +46,13 @@ export default function ResultsPage() {
       const total = data.reduce((sum, result) => sum + result.vote_count, 0);
       setTotalVotes(total);
     }
+
+    // Load total employees count
+    const { count } = await supabase
+      .from('employees')
+      .select('*', { count: 'exact', head: true });
+
+    setTotalEmployees(count || 0);
     setLoading(false);
   };
 
@@ -62,12 +74,13 @@ export default function ResultsPage() {
             </button>
           </div>
 
+
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8">
             <div className="flex items-center justify-center gap-3">
               <Users className="w-8 h-8" />
               <div className="text-center">
-                <div className="text-4xl font-bold">{totalVotes}</div>
-                <div className="text-blue-100">Total Pemilih</div>
+                <div className="text-4xl font-bold">{totalVotes} / {totalEmployees}</div>
+                <div className="text-blue-100">Total Pemilih / Total Pegawai Terdaftar</div>
               </div>
             </div>
           </div>
