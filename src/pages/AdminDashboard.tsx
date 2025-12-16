@@ -4,23 +4,33 @@
 
 
 
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase, Candidate, Employee, Vote } from '../lib/supabase';
-import { LogOut, Plus, Trash2, Upload, Users, Image, Eye, Bug } from 'lucide-react';
+import { supabase, Candidate, Employee, Vote, VotingSettings, updateVotingSettings, getVotingSettings } from '../lib/supabase';
+import { LogOut, Plus, Trash2, Upload, Users, Image, Eye, Bug, Settings, Clock } from 'lucide-react';
 
 import { testSupabaseConnection, testAddCandidate, debugAuth } from '../utils/debugSupabase';
 import { runCandidateAdditionTest } from '../utils/testCandidateAddition';
+import { VotingStatus } from '../components/VotingStatus';
 
 export default function AdminDashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'candidates' | 'employees' | 'votes'>('candidates');
+
+  const [activeTab, setActiveTab] = useState<'candidates' | 'employees' | 'votes' | 'settings'>('candidates');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [votes, setVotes] = useState<(Vote & { candidate_name: string })[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Voting settings state
+  const [votingSettings, setVotingSettings] = useState<VotingSettings | null>(null);
+  const [votingName, setVotingName] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [isActive, setIsActive] = useState(false);
 
   const [showAddCandidate, setShowAddCandidate] = useState(false);
   const [candidateName, setCandidateName] = useState('');
@@ -32,6 +42,7 @@ export default function AdminDashboard() {
   const [employeeIds, setEmployeeIds] = useState('');
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+
 
 
 
@@ -51,6 +62,116 @@ export default function AdminDashboard() {
     // User sudah login, load data
     loadData();
   }, [user, authLoading, activeTab]); // Include activeTab to reload data when tab changes
+
+
+  // Load voting settings when settings tab is active
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      loadVotingSettings();
+    }
+  }, [activeTab]);
+
+  // Load voting settings
+  const loadVotingSettings = async () => {
+    try {
+      const settings = await getVotingSettings();
+      setVotingSettings(settings);
+      
+      if (settings) {
+        setVotingName(settings.voting_name);
+        setStartTime(formatDateTimeForInput(settings.start_time));
+        setEndTime(formatDateTimeForInput(settings.end_time));
+        setIsActive(settings.is_active);
+      } else {
+        // Set default values for new settings
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const dayAfter = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+        
+        setVotingName('Pemilihan Ketua Serikat Pekerja');
+        setStartTime(formatDateTimeForInput(tomorrow.toISOString()));
+        setEndTime(formatDateTimeForInput(dayAfter.toISOString()));
+        setIsActive(false);
+      }
+    } catch (error) {
+      console.error('Error loading voting settings:', error);
+    }
+  };
+
+
+  // Format date for input field (YYYY-MM-DDTHH:MM) - convert to local time
+  const formatDateTimeForInput = (dateString: string): string => {
+    const date = new Date(dateString);
+    // Convert to local time before formatting
+    const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+
+
+  // Convert local datetime input to UTC string for database
+  const formatDateTimeForDatabase = (localDateTimeString: string): string => {
+    // input type="datetime-local" returns local time, we need to store as UTC
+    // Don't convert - JavaScript Date automatically handles this when toISOString() is called
+    const localDate = new Date(localDateTimeString);
+    return localDate.toISOString();
+  };
+
+  // Handle update voting settings
+  const handleUpdateVotingSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validate times
+      const startDate = new Date(startTime);
+      const endDate = new Date(endTime);
+      
+      if (startDate >= endDate) {
+        alert('Waktu berakhir harus lebih lambat dari waktu mulai');
+        setLoading(false);
+        return;
+      }
+
+      if (startDate <= new Date()) {
+        if (!confirm('Waktu mulai sudah lewat. Tetap simpan pengaturan ini?')) {
+          setLoading(false);
+          return;
+        }
+      }
+
+
+      const settingsData = {
+        voting_name: votingName.trim() || 'Pemilihan Ketua Serikat Pekerja',
+        start_time: formatDateTimeForDatabase(startTime),
+        end_time: formatDateTimeForDatabase(endTime),
+        is_active: isActive
+      };
+
+      console.log('Saving settings with converted times:', settingsData);
+
+      const savedSettings = await updateVotingSettings(settingsData);
+      
+      // Update local state immediately to reflect changes
+      setVotingSettings(savedSettings);
+      
+      // Also reload to ensure we have the latest data
+      await loadVotingSettings();
+      
+      alert('Pengaturan voting berhasil diperbarui!');
+      
+    } catch (error) {
+      console.error('Error updating voting settings:', error);
+      alert(`Gagal memperbarui pengaturan: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const loadData = async () => {
@@ -288,6 +409,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm mb-6">
+
           <div className="border-b">
             <nav className="flex">
               <button
@@ -319,6 +441,17 @@ export default function AdminDashboard() {
                 }`}
               >
                 Detail Voting
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-6 py-4 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                  activeTab === 'settings'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                Pengaturan Voting
               </button>
             </nav>
           </div>
@@ -463,6 +596,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
+
             {activeTab === 'votes' && (
               <div>
                 <div className="flex justify-between items-center mb-6">
@@ -504,6 +638,120 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Pengaturan Jadwal Voting</h2>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-gray-500" />
+                    <span className="text-sm text-gray-600">Kelola jadwal voting</span>
+                  </div>
+                </div>
+
+
+                {/* Voting Status Display */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Status Voting Saat Ini</h3>
+                  <VotingStatus 
+                    key={`voting-status-${votingSettings?.updated_at || 'initial'}`}
+                    showDetails={true} 
+                  />
+                </div>
+
+                {/* Settings Form */}
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Pengaturan Jadwal</h3>
+                  
+                  <form onSubmit={handleUpdateVotingSettings} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nama Voting
+                      </label>
+                      <input
+                        type="text"
+                        value={votingName}
+                        onChange={(e) => setVotingName(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Masukkan nama voting"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Waktu Mulai Voting
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Waktu Berakhir Voting
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                        Aktifkan voting (centang untuk mengizinkan voting sesuai jadwal)
+                      </label>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => loadVotingSettings()}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Important Notes */}
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-2">Catatan Penting:</h4>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• Voting hanya dapat dilakukan jika dicentang dan dalam rentang waktu yang ditentukan</li>
+                      <li>• Waktu voting menggunakan timezone server (UTC)</li>
+                      <li>• Pastikan waktu mulai lebih awal dari waktu berakhir</li>
+                      <li>• Perubahan pengaturan akan berlaku langsung</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}

@@ -1,8 +1,12 @@
 
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, Candidate } from '../lib/supabase';
-import { Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { Camera, CheckCircle, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { useVotingSchedule } from '../hooks/useVotingSchedule';
+import { VotingStatus } from '../components/VotingStatus';
+
 
 
 export default function VotingPage() {
@@ -17,10 +21,41 @@ export default function VotingPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  
+  // Voting schedule state
+  const { votingStatus, loading: statusLoading } = useVotingSchedule();
+  const [checkedSchedule, setCheckedSchedule] = useState(false);
+
 
   useEffect(() => {
     loadCandidates();
   }, []);
+
+  // Check voting schedule when component mounts
+  useEffect(() => {
+    if (!statusLoading && !checkedSchedule) {
+      setCheckedSchedule(true);
+      // If voting is not open, show schedule error
+      if (!votingStatus.isOpen) {
+        setError(getVotingScheduleErrorMessage());
+      }
+    }
+  }, [statusLoading, checkedSchedule, votingStatus]);
+
+  // Get error message based on voting status
+  const getVotingScheduleErrorMessage = (): string => {
+    switch (votingStatus.status) {
+      case 'inactive':
+        return 'Voting saat ini tidak aktif. Silakan hubungi admin untuk aktivasi voting.';
+      case 'not-started':
+        const startTime = votingStatus.settings ? new Date(votingStatus.settings.start_time).toLocaleString('id-ID') : 'waktu yang belum ditentukan';
+        return `Voting belum dimulai. Voting akan dimulai pada ${startTime}.`;
+      case 'ended':
+        return 'Voting telah berakhir. Terima kasih atas partisipasi Anda.';
+      default:
+        return 'Voting tidak tersedia saat ini. Silakan hubungi admin.';
+    }
+  };
 
   const loadCandidates = async () => {
     const { data } = await supabase
@@ -31,10 +66,18 @@ export default function VotingPage() {
 
   };
 
+
   const handleEmployeeIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // Check voting schedule first
+    if (!votingStatus.isOpen) {
+      setError(getVotingScheduleErrorMessage());
+      setLoading(false);
+      return;
+    }
 
     try {
       // Clean the employee ID - remove extra whitespace
@@ -211,10 +254,16 @@ export default function VotingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
+
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h1 className="text-3xl font-bold text-gray-900 text-center mb-8">
             Pemilihan Bakal Calon Ketua Serikat Pekerja
           </h1>
+
+          {/* Voting Status Display */}
+          <div className="mb-8">
+            <VotingStatus showDetails={false} />
+          </div>
 
           {step === 'employee-id' && (
             <div className="max-w-md mx-auto">
