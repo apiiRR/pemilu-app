@@ -34,17 +34,18 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="flex items-center justify-center mb-8">
-            <div className="bg-blue-100 p-4 rounded-full">
-              <Lock className="w-8 h-8 text-blue-600" />
+
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
+            <div className="bg-blue-100 p-3 sm:p-4 rounded-full">
+              <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">
             Login Admin
           </h1>
-          <p className="text-gray-600 text-center mb-8">
+          <p className="text-sm sm:text-base text-gray-600 text-center mb-6 sm:mb-8">
             Masuk untuk mengelola pemilihan
           </p>
 

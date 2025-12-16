@@ -381,26 +381,27 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">{user.email}</span>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="hidden sm:inline text-sm text-gray-600">{user.email}</span>
               <button
                 onClick={() => setShowDebug(!showDebug)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-700 font-medium"
+                className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-700 font-medium p-2 rounded-lg hover:bg-gray-100"
               >
                 <Bug className="w-4 h-4" />
-                Debug
+                <span className="hidden sm:inline">Debug</span>
               </button>
               <button
                 onClick={() => signOut()}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium"
+                className="flex items-center gap-1 sm:gap-2 text-red-600 hover:text-red-700 font-medium p-2 rounded-lg hover:bg-red-50"
               >
                 <LogOut className="w-4 h-4" />
-                Keluar
+                <span className="hidden sm:inline">Keluar</span>
               </button>
             </div>
           </div>
@@ -410,48 +411,49 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm mb-6">
 
+
           <div className="border-b">
-            <nav className="flex">
+            <nav className="flex overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab('candidates')}
-                className={`px-6 py-4 font-medium border-b-2 transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-4 font-medium border-b-2 transition-colors text-sm sm:text-base ${
                   activeTab === 'candidates'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Kelola Calon
+                <span className="hidden sm:inline">Kelola </span>Calon
               </button>
               <button
                 onClick={() => setActiveTab('employees')}
-                className={`px-6 py-4 font-medium border-b-2 transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-4 font-medium border-b-2 transition-colors text-sm sm:text-base ${
                   activeTab === 'employees'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Kelola Pegawai
+                <span className="hidden sm:inline">Kelola </span>Pegawai
               </button>
               <button
                 onClick={() => setActiveTab('votes')}
-                className={`px-6 py-4 font-medium border-b-2 transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-4 font-medium border-b-2 transition-colors text-sm sm:text-base ${
                   activeTab === 'votes'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Detail Voting
+                <span className="hidden sm:inline">Detail </span>Voting
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`px-6 py-4 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-4 font-medium border-b-2 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base ${
                   activeTab === 'settings'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Settings className="w-4 h-4" />
-                Pengaturan Voting
+                <span className="hidden sm:inline">Pengaturan </span>Voting
               </button>
             </nav>
           </div>
@@ -644,8 +646,9 @@ export default function AdminDashboard() {
 
             {activeTab === 'settings' && (
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Pengaturan Jadwal Voting</h2>
+
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Pengaturan Jadwal Voting</h2>
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-gray-500" />
                     <span className="text-sm text-gray-600">Kelola jadwal voting</span>
@@ -653,9 +656,10 @@ export default function AdminDashboard() {
                 </div>
 
 
+
                 {/* Voting Status Display */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Status Voting Saat Ini</h3>
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3">Status Voting Saat Ini</h3>
                   <VotingStatus 
                     key={`voting-status-${votingSettings?.updated_at || 'initial'}`}
                     showDetails={true} 
@@ -666,7 +670,8 @@ export default function AdminDashboard() {
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Pengaturan Jadwal</h3>
                   
-                  <form onSubmit={handleUpdateVotingSettings} className="space-y-6">
+
+                  <form onSubmit={handleUpdateVotingSettings} className="space-y-4 sm:space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Nama Voting
@@ -675,12 +680,12 @@ export default function AdminDashboard() {
                         type="text"
                         value={votingName}
                         onChange={(e) => setVotingName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                         placeholder="Masukkan nama voting"
                       />
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Waktu Mulai Voting
@@ -689,11 +694,10 @@ export default function AdminDashboard() {
                           type="datetime-local"
                           value={startTime}
                           onChange={(e) => setStartTime(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 sm:px-4 py-2 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                           required
                         />
                       </div>
-
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -703,30 +707,30 @@ export default function AdminDashboard() {
                           type="datetime-local"
                           value={endTime}
                           onChange={(e) => setEndTime(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 sm:px-4 py-2 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                           required
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center">
+                    <div className="flex items-start">
                       <input
                         type="checkbox"
                         id="isActive"
                         checked={isActive}
                         onChange={(e) => setIsActive(e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
                       />
                       <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
                         Aktifkan voting (centang untuk mengizinkan voting sesuai jadwal)
                       </label>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button
                         type="submit"
                         disabled={loading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
                       >
                         <Settings className="w-4 h-4" />
                         {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
@@ -735,7 +739,7 @@ export default function AdminDashboard() {
                       <button
                         type="button"
                         onClick={() => loadVotingSettings()}
-                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors text-sm sm:text-base"
                       >
                         Reset
                       </button>
@@ -760,15 +764,16 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+
       {showDebug && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-sm sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Debug Tools</h3>
+              <h3 className="text-base sm:text-lg font-bold">Debug Tools</h3>
 
               <button
                 onClick={() => setShowDebug(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 p-1 rounded"
               >
                 ✕
               </button>
@@ -776,13 +781,13 @@ export default function AdminDashboard() {
             
             <div className="space-y-4">
 
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   onClick={async () => {
                     const result = await testSupabaseConnection();
                     alert(`Connection Test: ${result.success ? 'Success' : 'Failed - ' + result.error}`);
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
                 >
                   Test Connection
                 </button>
@@ -792,7 +797,7 @@ export default function AdminDashboard() {
                     const result = await testAddCandidate();
                     alert(`Add Test: ${result.success ? 'Success' : 'Failed - ' + result.error}`);
                   }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm"
                 >
                   Test Add Candidate
                 </button>
@@ -802,7 +807,7 @@ export default function AdminDashboard() {
                     const result = await debugAuth();
                     alert(`Auth Test: ${result.success ? 'Success - ' + (result.user?.email || 'No email') : 'Failed - ' + result.error}`);
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm"
                 >
                   Test Auth
                 </button>
@@ -817,13 +822,13 @@ Insert: ${result.insert ? '✓' : '✗'}
 Overall: ${result.connection && result.insert ? 'SUCCESS' : 'FAILED'}`;
                     alert(`Full Diagnostic:\n${summary}${result.errors.length > 0 ? '\n\nErrors:\n' + result.errors.join('\n') : ''}`);
                   }}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm"
                 >
                   Full Diagnostic
                 </button>
               </div>
               
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600">
                 <p><strong>Console Logs:</strong> Check browser console for detailed debug information.</p>
                 <p><strong>Environment:</strong> Make sure Supabase environment variables are set.</p>
               </div>

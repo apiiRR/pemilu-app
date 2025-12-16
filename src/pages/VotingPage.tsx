@@ -255,19 +255,21 @@ export default function VotingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-8">
+
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 text-center mb-4 sm:mb-8">
             Pemilihan Bakal Calon Ketua Serikat Pekerja
           </h1>
 
           {/* Voting Status Display */}
-          <div className="mb-8">
+          <div className="mb-4 sm:mb-8">
             <VotingStatus showDetails={false} />
           </div>
 
+
           {step === 'employee-id' && (
             <div className="max-w-md mx-auto">
-              <form onSubmit={handleEmployeeIdSubmit} className="space-y-6">
+              <form onSubmit={handleEmployeeIdSubmit} className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nomor Induk Pegawai
@@ -276,7 +278,7 @@ export default function VotingPage() {
                     type="text"
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     placeholder="Masukkan NIP Anda"
                     required
                   />
@@ -289,7 +291,7 @@ export default function VotingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
                 >
                   {loading ? 'Memproses...' : 'Lanjutkan'}
                 </button>
@@ -297,28 +299,29 @@ export default function VotingPage() {
             </div>
           )}
 
+
           {step === 'select-candidate' && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 text-center">
                 Pilih Calon Ketua Serikat Pekerja
               </h2>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {candidates.map((candidate) => (
                   <button
                     key={candidate.id}
                     onClick={() => handleCandidateSelect(candidate)}
-                    className="bg-white border-2 border-gray-200 hover:border-blue-500 rounded-xl p-6 text-left transition-all hover:shadow-lg"
+                    className="bg-white border-2 border-gray-200 hover:border-blue-500 rounded-xl p-4 sm:p-6 text-left transition-all hover:shadow-lg"
                   >
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center text-lg sm:text-2xl font-bold text-blue-600 flex-shrink-0">
                         {candidate.order_number}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">{candidate.name}</h3>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{candidate.name}</h3>
                       </div>
                     </div>
                     {candidate.description && (
-                      <p className="text-sm text-gray-600 line-clamp-3">{candidate.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{candidate.description}</p>
                     )}
                   </button>
                 ))}
@@ -326,44 +329,45 @@ export default function VotingPage() {
             </div>
           )}
 
+
           {step === 'selfie' && selectedCandidate && (
             <div className="max-w-2xl mx-auto">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 text-center">
                 Ambil Foto Selfie
               </h2>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
                 Anda memilih: <span className="font-semibold">{selectedCandidate.name}</span>
               </p>
 
-              <div className="bg-gray-900 rounded-xl overflow-hidden mb-6">
+              <div className="bg-gray-900 rounded-xl overflow-hidden mb-4 sm:mb-6">
                 {!selfieImage ? (
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    className="w-full"
+                    className="w-full h-64 sm:h-80 object-cover"
                   />
                 ) : (
-                  <img src={selfieImage} alt="Selfie" className="w-full" />
+                  <img src={selfieImage} alt="Selfie" className="w-full h-64 sm:h-80 object-cover" />
                 )}
               </div>
 
               <canvas ref={canvasRef} className="hidden" />
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 {!selfieImage ? (
                   <>
                     <button
                       onClick={() => setStep('select-candidate')}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors text-sm sm:text-base"
                     >
                       Kembali
                     </button>
                     <button
                       onClick={takeSelfie}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
-                      <Camera className="w-5 h-5" />
+                      <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                       Ambil Foto
                     </button>
                   </>
@@ -371,19 +375,20 @@ export default function VotingPage() {
                   <>
                     <button
                       onClick={retakeSelfie}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors text-sm sm:text-base"
                     >
                       Ulangi Foto
                     </button>
                     <button
                       onClick={submitVote}
                       disabled={loading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Menyimpan...
+                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                          <span className="hidden sm:inline">Menyimpan...</span>
+                          <span className="sm:hidden">Loading...</span>
                         </>
                       ) : (
                         'Kirim Voting'
@@ -401,27 +406,28 @@ export default function VotingPage() {
             </div>
           )}
 
+
           {step === 'success' && (
-            <div className="text-center py-12">
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <div className="text-center py-8 sm:py-12">
+              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-green-500 mx-auto mb-4 sm:mb-6" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
                 Voting Berhasil!
               </h2>
 
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base px-4">
                 Terima kasih telah berpartisipasi dalam pemilihan bakal calon ketua serikat pekerja.
               </p>
 
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
                 <button
                   onClick={() => navigate('/')}
-                  className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+                  className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
                 >
                   Beranda
                 </button>
                 <button
                   onClick={() => navigate('/results')}
-                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
                 >
                   Lihat Hasil Voting
                 </button>
