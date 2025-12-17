@@ -161,10 +161,33 @@ export default function VotingPage() {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
       if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        const imageData = canvasRef.current.toDataURL('image/jpeg');
+
+
+
+        // Set canvas to portrait dimensions for better image quality
+        const maxWidth = 480;
+        const maxHeight = 640;
+        const videoWidth = videoRef.current.videoWidth;
+        const videoHeight = videoRef.current.videoHeight;
+
+        // Calculate aspect ratio and resize
+        let newWidth = maxWidth;
+        let newHeight = maxHeight;
+
+        if (videoWidth > videoHeight) {
+          newHeight = (videoHeight * maxWidth) / videoWidth;
+        } else {
+          newWidth = (videoWidth * maxHeight) / videoHeight;
+        }
+
+        canvasRef.current.width = newWidth;
+        canvasRef.current.height = newHeight;
+
+
+
+        // Draw and compress with higher quality for better image clarity
+        context.drawImage(videoRef.current, 0, 0, newWidth, newHeight);
+        const imageData = canvasRef.current.toDataURL('image/jpeg', 0.5); // Higher quality for better image clarity
         setSelfieImage(imageData);
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
@@ -272,7 +295,7 @@ export default function VotingPage() {
               <form onSubmit={handleEmployeeIdSubmit} className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nomor Induk Pegawai
+                    Nomor Induk Pegawai (Contoh : 12-04-9999)
                   </label>
                   <input
                     type="text"
@@ -339,16 +362,17 @@ export default function VotingPage() {
                 Anda memilih: <span className="font-semibold">{selectedCandidate.name}</span>
               </p>
 
+
               <div className="bg-gray-900 rounded-xl overflow-hidden mb-4 sm:mb-6">
                 {!selfieImage ? (
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    className="w-full h-64 sm:h-80 object-cover"
+                    className="w-full aspect-[3/4] object-cover"
                   />
                 ) : (
-                  <img src={selfieImage} alt="Selfie" className="w-full h-64 sm:h-80 object-cover" />
+                  <img src={selfieImage} alt="Selfie" className="w-full aspect-[3/4] object-cover" />
                 )}
               </div>
 
