@@ -253,6 +253,20 @@ export default function AdminDashboard() {
         console.log('Voter registrations loaded:', data);
         setVoterRegistrations(data || []);
       }
+
+      // Also load employees data for name lookup
+      console.log('Loading employees for name lookup...');
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (employeesError) {
+        console.error('Error loading employees:', employeesError);
+      } else {
+        console.log('Employees loaded for name lookup:', employeesData);
+        setEmployees(employeesData || []);
+      }
     } else if (activeTab === 'votes') {
       console.log('Loading votes...');
       const { data, error } = await supabase
@@ -719,6 +733,13 @@ export default function AdminDashboard() {
     }
   };
 
+  // Helper function to get employee name by employee_id
+  const getEmployeeName = (employeeId: string) => {
+    const employee = employees.find(emp => emp.employee_id === employeeId);
+    return employee?.employee_name || 'Nama tidak ditemukan';
+  };
+
+
 
 
   if (!user) return null;
@@ -1059,6 +1080,10 @@ export default function AdminDashboard() {
                                 Menunggu Verifikasi Email
                               </span>
                             )}
+                          </div>
+                          <div className="text-sm text-gray-900 mb-2">
+                            <span className="text-gray-600">Nama: </span>
+                            <span className="font-medium">{getEmployeeName(registration.employee_id)}</span>
                           </div>
                           <div className="text-sm text-gray-600 mb-2">
                             Terdaftar: {new Date(registration.registration_date).toLocaleString('id-ID')}
