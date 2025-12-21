@@ -9,6 +9,8 @@ import VotingPage from './pages/VotingPage';
 import ResultsPage from './pages/ResultsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboard from './pages/AdminDashboard';
+import RegistrationPage from './pages/RegistrationPage';
+import VoterVerifyPage from './pages/VoterVerifyPage';
 
 function App() {
   return (
@@ -16,10 +18,12 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegistrationPage />} />
+          <Route path="/voter/verify" element={<VoterVerifyPage />} />
           <Route path="/vote" element={<VotingPage />} />
           <Route path="/results" element={<ResultsPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/hidupJokowi/login" element={<AdminLoginPage />} />
+          <Route path="/hidupJokowi" element={<AdminDashboard />} />
           {/* Catch all route - redirect to home */}
           <Route path="*" element={<HomePage />} />
         </Routes>

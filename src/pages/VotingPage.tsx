@@ -1,26 +1,56 @@
 
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, Candidate } from '../lib/supabase';
-import { Camera, CheckCircle, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { supabase, Candidate, VoterProfile, checkVoterEligibility, updateVoterVoteStatus, createVoterProfile } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { CheckCircle, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { useVotingSchedule } from '../hooks/useVotingSchedule';
 import { VotingStatus } from '../components/VotingStatus';
 
-
+// Function to clear all Supabase related local storage
+const clearSupabaseSession = () => {
+  try {
+    // Get the Supabase project URL to identify the correct localStorage keys
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (supabaseUrl) {
+      const urlParts = new URL(supabaseUrl);
+      const projectRef = urlParts.hostname.split('.')[0];
+      
+      // Clear Supabase auth related localStorage
+      localStorage.removeItem(`sb-${projectRef}-auth-token`);
+      localStorage.removeItem(`sb-${projectRef}-refresh-token`);
+    }
+    
+    // Clear generic Supabase keys
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('Supabase session cleared from localStorage');
+  } catch (error) {
+    console.warn('Error clearing localStorage:', error);
+  }
+};
 
 export default function VotingPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'employee-id' | 'select-candidate' | 'selfie' | 'success'>('employee-id');
-  const [employeeId, setEmployeeId] = useState('');
+  const { user, signOut } = useAuth();
+  const [step, setStep] = useState<'email-login' | 'select-candidate' | 'success' | 'already-voted'>('email-login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [voterProfile, setVoterProfile] = useState<VoterProfile | null>(null);
+
   
   // Voting schedule state
   const { votingStatus, loading: statusLoading } = useVotingSchedule();
@@ -57,6 +87,8 @@ export default function VotingPage() {
     }
   };
 
+
+
   const loadCandidates = async () => {
     const { data } = await supabase
       .from('candidates')
@@ -67,7 +99,7 @@ export default function VotingPage() {
   };
 
 
-  const handleEmployeeIdSubmit = async (e: React.FormEvent) => {
+  const handleEmailLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -80,54 +112,58 @@ export default function VotingPage() {
     }
 
     try {
-      // Clean the employee ID - remove extra whitespace
-      const cleanEmployeeId = employeeId.trim();
-      console.log('Checking employee ID:', cleanEmployeeId);
+      // Sign in with email and password
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: password,
+      });
 
-      // First, let's see all employees to debug
-      const { data: allEmployees, error: selectError } = await supabase
-        .from('employees')
-        .select('*')
-        .limit(10);
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        setError('Email atau password salah');
+        setLoading(false);
+        return;
+      }
+
+      if (!data.user) {
+        setError('Gagal masuk ke sistem');
+        setLoading(false);
+        return;
+      }
+
+      // Check if email is verified
+      if (!data.user.email_confirmed_at) {
+        setError('Email Anda belum diverifikasi. Silakan cek email Anda dan klik link verifikasi.');
+        setLoading(false);
+        return;
+      }
+
+      // Check voter eligibility
+      console.log('Checking voter eligibility for user:', data.user.id);
+      const eligibilityCheck = await checkVoterEligibility(data.user.id);
+      console.log('Eligibility check result:', eligibilityCheck);
       
-      if (selectError) {
-        console.error('Error fetching employees:', selectError);
-        setError(`Database error: ${selectError.message}`);
+      if (!eligibilityCheck.eligible) {
+        console.error('User not eligible:', eligibilityCheck.error);
+        
+        // Check if the user has already voted
+        if (eligibilityCheck.profile) {
+          // Clear Supabase session from localStorage when user is already voted
+          clearSupabaseSession();
+          
+          setStep('already-voted');
+          setVoterProfile(eligibilityCheck.profile);
+        } else {
+          setError(eligibilityCheck.error || 'Anda tidak berhak untuk voting');
+        }
+        
         setLoading(false);
         return;
       }
 
-      console.log('Sample employees from database:', allEmployees);
-
-      // Now check for specific employee
-      const { data: employee, error: employeeError } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('employee_id', cleanEmployeeId)
-        .maybeSingle();
-
-      if (employeeError) {
-        console.error('Error checking employee:', employeeError);
-        setError(`Error checking employee: ${employeeError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      if (!employee) {
-        console.log('Employee not found for ID:', cleanEmployeeId);
-        setError(`Nomor Induk Pegawai "${cleanEmployeeId}" tidak terdaftar. Pastikan NIP sudah diimpor oleh admin.`);
-        setLoading(false);
-        return;
-      }
-
-      if (employee.has_voted) {
-        console.log('Employee already voted:', employee);
-        setError('Anda sudah melakukan voting sebelumnya');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Employee validation successful:', employee);
+      // Set voter profile and proceed
+      setVoterProfile(eligibilityCheck.profile || null);
+      console.log('Voter validation successful:', eligibilityCheck.profile);
       setLoading(false);
       setStep('select-candidate');
       
@@ -140,91 +176,27 @@ export default function VotingPage() {
 
   const handleCandidateSelect = (candidate: Candidate) => {
     setSelectedCandidate(candidate);
-    setStep('selfie');
   };
 
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' }
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    } catch (err) {
-      setError('Tidak dapat mengakses kamera');
-    }
-  };
-
-  const takeSelfie = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-
-
-
-        // Set canvas to portrait dimensions for better image quality
-        const maxWidth = 480;
-        const maxHeight = 640;
-        const videoWidth = videoRef.current.videoWidth;
-        const videoHeight = videoRef.current.videoHeight;
-
-        // Calculate aspect ratio and resize
-        let newWidth = maxWidth;
-        let newHeight = maxHeight;
-
-        if (videoWidth > videoHeight) {
-          newHeight = (videoHeight * maxWidth) / videoWidth;
-        } else {
-          newWidth = (videoWidth * maxHeight) / videoHeight;
-        }
-
-        canvasRef.current.width = newWidth;
-        canvasRef.current.height = newHeight;
-
-
-
-        // Draw and compress with higher quality for better image clarity
-        context.drawImage(videoRef.current, 0, 0, newWidth, newHeight);
-        const imageData = canvasRef.current.toDataURL('image/jpeg', 0.5); // Higher quality for better image clarity
-        setSelfieImage(imageData);
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-      }
-    }
-  };
-
-  const retakeSelfie = () => {
-    setSelfieImage(null);
-    startCamera();
-
-
-  };
-
-  const submitVote = async () => {
-    if (!selectedCandidate || !selfieImage) return;
+  const handleVoteSubmit = async () => {
+    if (!selectedCandidate || !voterProfile) return;
 
     setLoading(true);
     setError('');
 
     try {
       console.log('Starting vote submission...', {
-        employeeId,
-        candidateId: selectedCandidate.id,
-        selfieImageLength: selfieImage.length
+        voterProfile: voterProfile.employee_id,
+        candidateId: selectedCandidate.id
       });
 
-      // Simple approach: store base64 image directly in database (no storage needed)
-      console.log('Saving vote with base64 image directly...');
-      
+      // Insert vote record
       const { data: voteData, error: voteError } = await supabase
         .from('votes')
         .insert({
-          employee_id: employeeId.trim(),
+          employee_id: voterProfile.employee_id,
           candidate_id: selectedCandidate.id,
-          selfie_url: selfieImage
+          selfie_url: 'no_selfie_required' // Placeholder since no selfie is needed
         })
         .select()
         .single();
@@ -236,43 +208,40 @@ export default function VotingPage() {
       
       console.log('Vote saved successfully:', voteData);
 
-      // Update employee voting status
-      console.log('Updating employee voting status...');
-      const { error: updateError } = await supabase
-        .from('employees')
-        .update({ has_voted: true })
-        .eq('employee_id', employeeId.trim());
-
-      if (updateError) {
-        console.error('Employee update failed:', updateError);
+      // Update voter profile voting status
+      console.log('Updating voter profile voting status...');
+      try {
+        await updateVoterVoteStatus(voterProfile.id);
+        console.log('Voter profile voting status updated successfully');
+      } catch (updateError) {
+        console.error('Voter profile update failed:', updateError);
         // Don't throw here, vote was already saved
-        console.log('Vote was saved but employee update failed');
-      } else {
-        console.log('Employee voting status updated successfully');
+        console.log('Vote was saved but voter profile update failed');
       }
 
       console.log('Vote submission completed successfully');
+      
+      // Clear Supabase session from localStorage after successful voting
+      clearSupabaseSession();
+      
+      // Logout user and redirect to home
+      await signOut();
       setStep('success');
       
     } catch (err) {
       console.error('Vote submission error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      // Clear Supabase session from localStorage after failed voting
+      clearSupabaseSession();
+      
       setError(`Gagal menyimpan voting: ${errorMessage}. Silakan coba lagi.`);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (step === 'selfie' && !selfieImage) {
-      startCamera();
-    }
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [step]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
@@ -290,19 +259,32 @@ export default function VotingPage() {
           </div>
 
 
-          {step === 'employee-id' && (
+          {step === 'email-login' && (
             <div className="max-w-md mx-auto">
-              <form onSubmit={handleEmployeeIdSubmit} className="space-y-4 sm:space-y-6">
+              <form onSubmit={handleEmailLoginSubmit} className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nomor Induk Pegawai (Contoh : 12-04-9999)
+                    Email
                   </label>
                   <input
-                    type="text"
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                    placeholder="Masukkan NIP Anda"
+                    placeholder="Masukkan email Anda"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Masukkan password Anda"
                     required
                   />
                 </div>
@@ -316,24 +298,27 @@ export default function VotingPage() {
                   disabled={loading}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
                 >
-                  {loading ? 'Memproses...' : 'Lanjutkan'}
+                  {loading ? 'Memproses...' : 'Masuk'}
                 </button>
               </form>
             </div>
           )}
-
 
           {step === 'select-candidate' && (
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 text-center">
                 Pilih Calon Ketua Serikat Pekerja
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                 {candidates.map((candidate) => (
                   <button
                     key={candidate.id}
                     onClick={() => handleCandidateSelect(candidate)}
-                    className="bg-white border-2 border-gray-200 hover:border-blue-500 rounded-xl p-4 sm:p-6 text-left transition-all hover:shadow-lg"
+                    className={`bg-white border-2 rounded-xl p-4 sm:p-6 text-left transition-all hover:shadow-lg ${
+                      selectedCandidate?.id === candidate.id 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-500'
+                    }`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center text-lg sm:text-2xl font-bold text-blue-600 flex-shrink-0">
@@ -341,6 +326,9 @@ export default function VotingPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{candidate.name}</h3>
+                        {selectedCandidate?.id === candidate.id && (
+                          <span className="text-sm text-blue-600 font-medium">✓ Terpilih</span>
+                        )}
                       </div>
                     </div>
                     {candidate.description && (
@@ -349,86 +337,54 @@ export default function VotingPage() {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
 
-
-          {step === 'selfie' && selectedCandidate && (
-            <div className="max-w-2xl mx-auto">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 text-center">
-                Ambil Foto Selfie
-              </h2>
-              <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
-                Anda memilih: <span className="font-semibold">{selectedCandidate.name}</span>
-              </p>
-
-
-              <div className="bg-gray-900 rounded-xl overflow-hidden mb-4 sm:mb-6">
-                {!selfieImage ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full aspect-[3/4] object-cover"
-                  />
-                ) : (
-                  <img src={selfieImage} alt="Selfie" className="w-full aspect-[3/4] object-cover" />
-                )}
-              </div>
-
-              <canvas ref={canvasRef} className="hidden" />
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                {!selfieImage ? (
-                  <>
+              {/* Voting Action Buttons */}
+              {selectedCandidate && (
+                <div className="max-w-md mx-auto">
+                  <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                    <p className="text-center text-sm text-gray-700">
+                      Anda memilih: <span className="font-semibold text-blue-700">{selectedCandidate.name}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3">
                     <button
-                      onClick={() => setStep('select-candidate')}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      Kembali
-                    </button>
-                    <button
-                      onClick={takeSelfie}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-                    >
-                      <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Ambil Foto
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={retakeSelfie}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      Ulangi Foto
-                    </button>
-                    <button
-                      onClick={submitVote}
+                      onClick={handleVoteSubmit}
                       disabled={loading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                          <span className="hidden sm:inline">Menyimpan...</span>
-                          <span className="sm:hidden">Loading...</span>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Menyimpan Vote...
                         </>
                       ) : (
-                        'Kirim Voting'
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Kirim Voting
+                        </>
                       )}
                     </button>
-                  </>
-                )}
-              </div>
+                    <button
+                      onClick={() => setSelectedCandidate(null)}
+                      className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors"
+                    >
+                      Batal Pilih
+                    </button>
+                  </div>
 
-              {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mt-4">
-                  {error}
+                  {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mt-4">
+                      {error}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
+
+
+
 
 
           {step === 'success' && (
@@ -438,20 +394,58 @@ export default function VotingPage() {
                 Voting Berhasil!
               </h2>
 
-              <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base px-4">
+              <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base px-4">
                 Terima kasih telah berpartisipasi dalam pemilihan bakal calon ketua serikat pekerja.
+              </p>
+
+              <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base px-4">
+                Anda telah keluar dari sistem secara otomatis.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
                 <button
                   onClick={() => navigate('/')}
-                  className="inline-block bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
+                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
                 >
-                  Beranda
+                  Kembali ke Beranda
                 </button>
                 <button
                   onClick={() => navigate('/results')}
+                  className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
+                >
+                  Lihat Hasil Voting
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'already-voted' && (
+            <div className="text-center py-8 sm:py-12">
+              <AlertCircle className="w-16 h-16 sm:w-20 sm:h-20 text-orange-500 mx-auto mb-4 sm:mb-6" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+                Anda Sudah Melakukan Voting
+              </h2>
+
+              <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base px-4">
+                Akun Anda telah digunakan untuk voting sebelumnya.
+              </p>
+
+
+
+              <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base px-4">
+                Setiap voter hanya dapat voting sekali. Terima kasih atas partisipasi Anda.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+                <button
+                  onClick={() => navigate('/')}
                   className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
+                >
+                  Kembali ke Beranda
+                </button>
+                <button
+                  onClick={() => navigate('/results')}
+                  className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors text-sm sm:text-base"
                 >
                   Lihat Hasil Voting
                 </button>

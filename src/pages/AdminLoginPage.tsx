@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 
 export default function AdminLoginPage() {
@@ -19,15 +20,54 @@ export default function AdminLoginPage() {
     setError('');
     setLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: password,
+    });
 
     if (error) {
       setError('Email atau password salah');
       setLoading(false);
-    } else {
+      return;
+    }
 
-      // Redirect menggunakan React Router navigation
-      navigate('/admin');
+    if (!data.user) {
+      setError('Gagal masuk ke sistem');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Check if user is admin by looking up in admin_users table
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (adminError) {
+        console.error('Error checking admin status:', adminError);
+        setError('Terjadi kesalahan saat memeriksa status admin');
+        setLoading(false);
+        return;
+      }
+
+      if (!adminUser) {
+        // Sign out the user if not admin
+        await supabase.auth.signOut();
+        setError('Anda tidak memiliki akses ke halaman admin');
+        setLoading(false);
+        return;
+      }
+
+      // User is admin, redirect to admin dashboard
+      navigate('/hidupJokowi');
+      
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError('Terjadi kesalahan yang tidak terduga');
+      setLoading(false);
     }
   };
 

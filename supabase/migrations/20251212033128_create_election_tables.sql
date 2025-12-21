@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS candidates (
 CREATE TABLE IF NOT EXISTS employees (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   employee_id text UNIQUE NOT NULL,
+  employee_name text,
   has_voted boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );

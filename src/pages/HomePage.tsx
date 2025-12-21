@@ -1,5 +1,5 @@
 
-import { Vote, BarChart3, Lock } from 'lucide-react';
+import { Vote, BarChart3, Lock, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function HomePage() {
@@ -52,18 +52,18 @@ export default function HomePage() {
             </Link>
 
             <Link
-              to="/admin/login"
+              to="/register"
               className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:shadow-2xl transition-all transform hover:-translate-y-1 block sm:col-span-2 lg:col-span-1"
             >
-              <div className="bg-slate-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600" />
+              <div className="bg-purple-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
               </div>
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Admin</h2>
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Registrasi Voter</h2>
               <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-                Kelola calon, pegawai, dan pantau hasil voting
+                Daftar sebagai voter untuk pemilihan chairman serikat pekerja
               </p>
-              <div className="bg-slate-600 text-white font-medium py-2 sm:py-3 rounded-lg text-sm sm:text-base">
-                Login Admin
+              <div className="bg-purple-600 text-white font-medium py-2 sm:py-3 rounded-lg text-sm sm:text-base">
+                Daftar Sekarang
               </div>
             </Link>
           </div>
