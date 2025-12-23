@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase, Candidate, VoterProfile, checkVoterEligibility, updateVoterVoteStatus, createVoterProfile } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { CheckCircle, Loader2, AlertCircle, LogOut } from 'lucide-react';
@@ -287,6 +287,14 @@ export default function VotingPage() {
                     placeholder="Masukkan password Anda"
                     required
                   />
+                </div>
+                <div className="text-right">
+                  <Link
+                    to="/reset-password"
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    Lupa Password?
+                  </Link>
                 </div>
                 {error && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">

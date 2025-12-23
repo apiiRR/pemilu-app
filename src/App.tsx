@@ -11,6 +11,7 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import RegistrationPage from './pages/RegistrationPage';
 import VoterVerifyPage from './pages/VoterVerifyPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   return (
@@ -22,6 +23,8 @@ function App() {
           <Route path="/voter/verify" element={<VoterVerifyPage />} />
           <Route path="/vote" element={<VotingPage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/reset-password/confirm" element={<ResetPasswordPage />} />
           <Route path="/hidupJokowi/login" element={<AdminLoginPage />} />
           <Route path="/hidupJokowi" element={<AdminDashboard />} />
           {/* Catch all route - redirect to home */}
